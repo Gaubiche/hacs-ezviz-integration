@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@gaubiche"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Gaubiche/hacs-ezviz-integration",
+  "domain": "hacs_ezviz_integration",
+  "iot_class": "cloud_polling",
+  "name": "HACS Ezviz Integration",
+  "requirements": ["pyezvizapi>=1.0.0.6", "debugpy"],
+  "version": "1.0.0"
+}
