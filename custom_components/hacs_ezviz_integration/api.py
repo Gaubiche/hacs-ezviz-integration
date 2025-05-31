@@ -56,6 +56,7 @@ class EzvizAPI:
 
     def get_updated_light_bulbs(self) -> Any:
         """Fetch the data of every device and return."""
+        self.refresh_token()
         self.client.get_device_infos()
         return self.client.load_light_bulbs()
 

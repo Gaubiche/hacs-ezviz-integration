@@ -7,6 +7,13 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from custom_components.hacs_ezviz_integration.api import EzvizAPI
 
 from .const import DOMAIN
+import logging
+
+logging.basicConfig(
+    filename='hacs_ezviz_integration.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Conf via UI only"""
