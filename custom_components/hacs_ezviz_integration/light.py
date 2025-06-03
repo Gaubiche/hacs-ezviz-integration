@@ -23,6 +23,11 @@ class EzvizLight(LightEntity):
         self.api = api
 
     @property
+    def unique_id(self):
+        """Return a unique ID for this light."""
+        return self.serial
+
+    @property
     def name(self):
         """Name of the light."""
         return self.data.get("name")
