@@ -38,6 +38,7 @@ class EzvizAPI:
         if datetime.now() >= self.token_creation_time + timedelta(hours=12):
             try:
                 _LOGGER.info("Token update")
+                self._token["session_id"] = None # a bit hacky but the refresh token method can crash
                 self.client.login()
                 self.token_creation_time = datetime.now()
                 _LOGGER.info("Token updated")
