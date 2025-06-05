@@ -38,7 +38,7 @@ class EzvizAPI:
         if datetime.now() >= self.token_creation_time + timedelta(hours=12):
             try:
                 _LOGGER.info("Token update")
-                self._token["session_id"] = None # a bit hacky but the refresh token method can crash
+                self.client._token["session_id"] = None # a bit hacky but the refresh token method can crash
                 self.client.login()
                 self.token_creation_time = datetime.now()
                 _LOGGER.info("Token updated")
@@ -48,7 +48,6 @@ class EzvizAPI:
 
     def load_devices(self):
         """Load devices managed by the specified account."""
-        self.refresh_token()
         self.client.load_devices()
 
     def get_light_bulbs(self) -> Any:
@@ -57,24 +56,23 @@ class EzvizAPI:
 
     def get_updated_light_bulbs(self) -> Any:
         """Fetch the data of every device and return."""
-        self.refresh_token()
         self.client.get_device_infos()
         return self.client.load_light_bulbs()
 
     def get_light_bulb(self, serial: str) -> EzvizLightBulb:
         """Returns a connected lightbulb instance."""
         return EzvizLightBulb(self.client, serial)
-    
+
     def is_light_bulb_on(self, serial: str) -> bool:
         """Returns the state of a lightbulb."""
         light_bulb = self.get_light_bulb(serial=serial)
         return light_bulb.status
-    
+
     def toggle_light_bulb(self, serial: str) -> bool:
         """Change the state of a light bulb."""
         light_bulb = self.get_light_bulb(serial=serial)
         return light_bulb.toggle_switch()
-    
+
     def turn_off(self, serial: str):
         """Turn off a light bulb."""
         self.toggle_light_bulb(serial)
