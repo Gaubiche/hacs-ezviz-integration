@@ -9,14 +9,8 @@ from homeassistant.helpers.event import async_track_time_interval
 
 from custom_components.hacs_ezviz_integration.api import EzvizAPI
 
-from .const import DOMAIN
+from .const import DOMAIN, PLATFORMS
 import logging
-
-logging.basicConfig(
-    filename='hacs_ezviz_integration.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -29,8 +23,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Configuration via UI"""
     hass.data.setdefault(DOMAIN, {})
     api = EzvizAPI(entry.data["username"], entry.data["password"])
-    await hass.async_add_executor_job(api.connect)
-    await hass.async_add_executor_job(api.load_devices)
+    try:
+        _LOGGER.debug("Initializing Ezviz API client")
+        await hass.async_add_executor_job(api.connect)
+        await hass.async_add_executor_job(api.load_devices)
+        _LOGGER.info("Ezviz devices loaded")
+    except Exception as err:
+        _LOGGER.warning("Unable to initialize Ezviz API: %s", err)
+        raise ConfigEntryNotReady from err
 
     hass.data[DOMAIN][entry.entry_id] = {
         "api": api
@@ -42,13 +42,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await hass.async_add_executor_job(api.refresh_token)
             _LOGGER.info("Token refreshed successfully.")
         except Exception as e:
-            _LOGGER.error(f"Failed to refresh token: {e}")
+            _LOGGER.exception("Failed to refresh token: %s", e)
 
     async_track_time_interval(hass, refresh_token, timedelta(hours=12))
 
-    if api.get_light_bulbs():
+    for platform in PLATFORMS:
         hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, "light")
+            hass.config_entries.async_forward_entry_setup(entry, platform)
         )
 
     return True

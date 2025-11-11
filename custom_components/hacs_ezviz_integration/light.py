@@ -21,6 +21,7 @@ class EzvizLight(LightEntity):
         self.serial = serial
         self.data = data
         self.api = api
+        _LOGGER.debug("Initialized Ezviz light entity serial=%s name=%s", self.serial, self.data.get("name"))
 
     @property
     def unique_id(self):
@@ -35,26 +36,37 @@ class EzvizLight(LightEntity):
     @property
     def is_on(self):
         """Light power state."""
-        return self.data.get("is_on")
+        return self.data.get("is_on", self.data.get("status") == 1)
 
     @property
     def available(self):
         """Connected/Disconnected state"""
-        self.async_update()
-        return self.data.get("status")==1
+        return self.data.get("status") == 1
 
     async def async_turn_on(self, **kwargs):
         """Turn the light bulb on."""
-        await self.hass.async_add_executor_job(self.api.turn_off, self.serial)
+        _LOGGER.debug("Turning ON light serial=%s", self.serial)
+        try:
+            await self.hass.async_add_executor_job(self.api.turn_on, self.serial)
+        except Exception as err:
+            _LOGGER.exception("Failed to turn on light serial=%s: %s", self.serial, err)
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs):
         """Turn the light bulb off."""
-        await self.hass.async_add_executor_job(self.api.turn_on, self.serial)
+        _LOGGER.debug("Turning OFF light serial=%s", self.serial)
+        try:
+            await self.hass.async_add_executor_job(self.api.turn_off, self.serial)
+        except Exception as err:
+            _LOGGER.exception("Failed to turn off light serial=%s: %s", self.serial, err)
         self.async_write_ha_state()
 
     async def async_update(self):
         """Update the status of the lightbulb."""
-        lights = await self.hass.async_add_executor_job(self.api.get_updated_light_bulbs)
-        self.data = lights[self.serial]
+        _LOGGER.debug("Updating light state serial=%s", self.serial)
+        try:
+            lights = await self.hass.async_add_executor_job(self.api.get_updated_light_bulbs)
+            self.data = lights[self.serial]
+        except Exception as err:
+            _LOGGER.warning("Failed to update light state serial=%s: %s", self.serial, err)
 
