@@ -24,7 +24,6 @@ class EzvizAPI:
         try:
             self.client.login()
         except EzvizAuthVerificationCode:
-            # Blocking input() is not suitable in HA; instead log and raise a clear error
             _LOGGER.error("MFA required for Ezviz account; interactive MFA not supported in Home Assistant")
             raise
         except Exception as e:
@@ -88,12 +87,20 @@ class EzvizAPI:
     def turn_off(self, serial: str):
         """Turn off a light bulb."""
         _LOGGER.debug("Turning OFF light via API serial=%s", serial)
-        self.toggle_light_bulb(serial)
+        light_bulb = self.get_light_bulb(serial=serial)
+        light_bulb.turn_off()
 
     def turn_on(self, serial: str):
         """Turn on a light bulb."""
         _LOGGER.debug("Turning ON light via API serial=%s", serial)
-        self.toggle_light_bulb(serial)
+        light_bulb = self.get_light_bulb(serial=serial)
+        light_bulb.turn_on()
+
+    def set_brightness(self, serial: str, brightness):
+        """Sets the brightness of a light bulb."""
+        _LOGGER.debug("Setting the brightness of %s to %s", serial, brightness)
+        light_bulb = self.get_light_bulb(serial=serial)
+        light_bulb.set_brightness(brightness)
 
     def close(self):
         """Close api session."""

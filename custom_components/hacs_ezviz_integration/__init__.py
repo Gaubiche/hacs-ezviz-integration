@@ -1,7 +1,8 @@
 """Custom integration for Ezviz lightbulbs for Home Assistant."""
 from datetime import timedelta
 
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.core import HomeAssistant
+from homeassistant.core_config import Config
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -35,6 +36,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         "api": api
     }
+    if api.get_light_bulbs():
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setups(entry, ["light"])
+        )
 
     async def refresh_token(_):
         try:
@@ -45,10 +50,4 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.exception("Failed to refresh token: %s", e)
 
     async_track_time_interval(hass, refresh_token, timedelta(hours=12))
-
-    for platform in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, platform)
-        )
-
     return True

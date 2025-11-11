@@ -2,7 +2,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 import voluptuous as vol
 
-from .const import DOMAIN, CONF_USER, CONF_PASSWORD  # Assurez-vous que ces constantes sont définies dans const.py
+from .const import DOMAIN, CONF_USER, CONF_PASSWORD
 
 class EzvizConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config Flow for Ezviz integration."""
