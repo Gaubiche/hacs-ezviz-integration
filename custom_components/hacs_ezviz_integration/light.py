@@ -1,4 +1,4 @@
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import LightEntity, ATTR_BRIGHTNESS, ColorMode
 import logging
 from .const import DOMAIN
 from .api import EzvizAPI
@@ -42,12 +42,41 @@ class EzvizLight(LightEntity):
     def available(self):
         """Connected/Disconnected state"""
         return self.data.get("status") == 1
+    
+    @property
+    def supported_color_modes(self):
+        """Report supported color modes (brightness only)."""
+        return {ColorMode.BRIGHTNESS}
+
+    @property
+    def brightness(self):
+        """Return the brightness in HA scale (0-255) if available."""
+        # Ezviz API likely reports brightness as 0-100
+        percent = self.data.get("brightness")
+        if percent is None:
+            return None
+        try:
+            # Clamp and convert 0-100 → 0-255
+            percent = max(0, min(100, int(percent)))
+            return int(round((percent / 100) * 255))
+        except (TypeError, ValueError):
+            return None
 
     async def async_turn_on(self, **kwargs):
         """Turn the light bulb on."""
+        if self.is_on: # Would create a flicker
+            _LOGGER.debug("Light already ON serial=%s", self.serial)
+            return
         _LOGGER.debug("Turning ON light serial=%s", self.serial)
         try:
+            brightness: int | None = kwargs.get(ATTR_BRIGHTNESS)
+            # Always ensure light is turned on
             await self.hass.async_add_executor_job(self.api.turn_on, self.serial)
+            if brightness is not None:
+                # Convert 0-255 → 0-100 for API
+                brightness = max(0, min(255, int(brightness)))
+                percent = int(round((brightness / 255) * 100))
+                await self.hass.async_add_executor_job(self.api.set_brightness, self.serial, percent)
         except Exception as err:
             _LOGGER.exception("Failed to turn on light serial=%s: %s", self.serial, err)
         self.async_write_ha_state()

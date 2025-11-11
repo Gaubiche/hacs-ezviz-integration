@@ -88,13 +88,13 @@ class EzvizAPI:
         """Turn off a light bulb."""
         _LOGGER.debug("Turning OFF light via API serial=%s", serial)
         light_bulb = self.get_light_bulb(serial=serial)
-        light_bulb.turn_off()
+        light_bulb.power_off()
 
     def turn_on(self, serial: str):
         """Turn on a light bulb."""
         _LOGGER.debug("Turning ON light via API serial=%s", serial)
         light_bulb = self.get_light_bulb(serial=serial)
-        light_bulb.turn_on()
+        light_bulb.power_on()
 
     def set_brightness(self, serial: str, brightness):
         """Sets the brightness of a light bulb."""

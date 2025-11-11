@@ -6,6 +6,6 @@
   "domain": "hacs_ezviz_integration",
   "iot_class": "cloud_polling",
   "name": "HACS Ezviz Integration",
-  "requirements": ["pyezvizapi>=1.0.0.6"],
+  "requirements": ["pyezvizapi>=1.0.4.3"],
   "version": "1.0.0"
 }
