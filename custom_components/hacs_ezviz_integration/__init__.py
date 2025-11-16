@@ -41,6 +41,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.config_entries.async_forward_entry_setups(entry, ["light"])
         )
 
+    if api.get_smart_plugs():
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setups(entry, ["switch"])
+        )
+
     async def refresh_token(_):
         try:
             _LOGGER.info("Refreshing Ezviz API token...")

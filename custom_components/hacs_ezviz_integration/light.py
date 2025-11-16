@@ -21,6 +21,8 @@ class EzvizLight(LightEntity):
         self.serial = serial
         self.data = data
         self.api = api
+        self.handle = None
+        self.status = None
         _LOGGER.debug("Initialized Ezviz light entity serial=%s name=%s", self.serial, self.data.get("name"))
 
     @property
@@ -29,19 +31,29 @@ class EzvizLight(LightEntity):
         return self.serial
 
     @property
+    def supported_color_modes(self):
+        return {ColorMode.BRIGHTNESS}
+
+    @property
     def name(self):
         """Name of the light."""
-        return self.data.get("name")
+        if not self.status:
+            return self.data.get("name")
+        return self.status["name"]
 
     @property
     def is_on(self):
         """Light power state."""
-        return self.data.get("is_on", self.data.get("status") == 1)
+        if not self.status:
+            return False
+        return self.status["is_on"]
 
     @property
     def available(self):
         """Connected/Disconnected state"""
-        return self.data.get("status") == 1
+        if not self.status:
+            return False
+        return self.status["status"]
     
     @property
     def supported_color_modes(self):
@@ -52,31 +64,30 @@ class EzvizLight(LightEntity):
     def brightness(self):
         """Return the brightness in HA scale (0-255) if available."""
         # Ezviz API likely reports brightness as 0-100
-        percent = self.data.get("brightness")
-        if percent is None:
-            return None
+        _LOGGER.debug("Fetching the brightness of light serial=%s", self.serial)
+        if not self.status:
+            return 0
+        percent = self.status["brightness"]
         try:
             # Clamp and convert 0-100 → 0-255
             percent = max(0, min(100, int(percent)))
             return int(round((percent / 100) * 255))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as err:
+            _LOGGER.exception("Failed to fetch the brightness of light serial=%s: %s", self.serial, err)
             return None
 
     async def async_turn_on(self, **kwargs):
         """Turn the light bulb on."""
-        if self.is_on: # Would create a flicker
-            _LOGGER.debug("Light already ON serial=%s", self.serial)
-            return
         _LOGGER.debug("Turning ON light serial=%s", self.serial)
         try:
             brightness: int | None = kwargs.get(ATTR_BRIGHTNESS)
             # Always ensure light is turned on
-            await self.hass.async_add_executor_job(self.api.turn_on, self.serial)
-            if brightness is not None:
+            await self.hass.async_add_executor_job(self.handle.power_on)
+            if brightness is not None and brightness != self.brightness:
                 # Convert 0-255 → 0-100 for API
                 brightness = max(0, min(255, int(brightness)))
                 percent = int(round((brightness / 255) * 100))
-                await self.hass.async_add_executor_job(self.api.set_brightness, self.serial, percent)
+                await self.hass.async_add_executor_job(self.handle.set_brightness, percent)
         except Exception as err:
             _LOGGER.exception("Failed to turn on light serial=%s: %s", self.serial, err)
         self.async_write_ha_state()
@@ -85,7 +96,7 @@ class EzvizLight(LightEntity):
         """Turn the light bulb off."""
         _LOGGER.debug("Turning OFF light serial=%s", self.serial)
         try:
-            await self.hass.async_add_executor_job(self.api.turn_off, self.serial)
+            await self.hass.async_add_executor_job(self.handle.power_off)
         except Exception as err:
             _LOGGER.exception("Failed to turn off light serial=%s: %s", self.serial, err)
         self.async_write_ha_state()
@@ -94,8 +105,7 @@ class EzvizLight(LightEntity):
         """Update the status of the lightbulb."""
         _LOGGER.debug("Updating light state serial=%s", self.serial)
         try:
-            lights = await self.hass.async_add_executor_job(self.api.get_updated_light_bulbs)
-            self.data = lights[self.serial]
+            self.handle = await self.hass.async_add_executor_job(self.api.get_light_bulb, self.serial)
+            self.status = self.handle.status()
         except Exception as err:
             _LOGGER.warning("Failed to update light state serial=%s: %s", self.serial, err)
-

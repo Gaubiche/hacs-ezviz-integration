@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from pyezvizapi import EzvizClient
 from pyezvizapi import EzvizAuthVerificationCode
-from pyezvizapi import EzvizLightBulb
+from pyezvizapi import EzvizLightBulb, EzvizSmartPlug
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -59,6 +59,10 @@ class EzvizAPI:
         """Returns the fetched data of every device."""
         return self.client._light_bulbs
 
+    def get_smart_plugs(self) -> Any:
+        """Returns the fetched data of every device."""
+        return self.client._smart_plugs
+
     def get_updated_light_bulbs(self) -> Any:
         """Fetch the data of every device and return."""
         _LOGGER.debug("Fetching updated light bulb states")
@@ -70,6 +74,10 @@ class EzvizAPI:
     def get_light_bulb(self, serial: str) -> EzvizLightBulb:
         """Returns a connected lightbulb instance."""
         return EzvizLightBulb(self.client, serial)
+
+    def get_smart_plug(self, serial: str) -> EzvizSmartPlug:
+        """Returns a connected lightbulb instance."""
+        return EzvizSmartPlug(self.client, serial)
 
     def is_light_bulb_on(self, serial: str) -> bool:
         """Returns the state of a lightbulb."""
